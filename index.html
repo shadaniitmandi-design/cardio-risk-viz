@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CardioViz — interactive cardiovascular risk research with a real 3D anatomical heart and transparent model explanations.">
+    <title>CardioViz — Cardiovascular Risk Analysis</title>
+    <link rel="icon" href="./static/favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./static/css/style.css">
+    <link rel="stylesheet" href="./static/css/clinical-workstation.css?v=clinical-20261015b">
+    <link rel="stylesheet" href="./static/css/editorial-workstation.css?v=editorial-20261015a">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="heartbeat-loader">
+                <svg viewBox="0 0 150 40" class="ecg-line">
+                    <polyline points="0,20 20,20 25,20 30,5 35,35 40,20 50,20 55,20 60,10 65,30 70,20 80,20 85,20 90,8 95,32 100,20 110,20 115,20 120,5 125,35 130,20 150,20" fill="none" stroke="var(--accent-cyan)" stroke-width="2"/>
+                </svg>
+            </div>
+            <h2>CardioViz</h2>
+            <p id="loading-status">Initializing system...</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header id="app-header" class="app-header">
+        <div class="header-left">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+            </div>
+            <div class="header-title">
+                <h1>CardioViz</h1>
+                <span class="subtitle">CARDIOVASCULAR RISK ANALYSIS</span>
+            </div>
+        </div>
+        <nav class="top-nav" aria-label="Primary navigation">
+            <a class="nav-link active" href="#analysis">Analysis</a>
+            <a class="nav-link" href="#heart-view">3D Heart</a>
+            <a class="nav-link" href="#metrics-section">Model Info</a>
+            <a class="nav-link" href="#disclaimer">Education</a>
+        </nav>
+        <div class="header-right">
+            <div class="model-badge" id="model-status">
+                <span class="badge-dot"></span>
+                <span>Models Loading...</span>
+            </div>
+            <span class="education-pill"><span aria-hidden="true">✳</span> Educational use only</span>
+        </div>
+    </header>
+
+    <div class="clinical-safety-bar" role="note" aria-label="Clinical safety notice">
+        <span class="safety-message">Educational decision support only · Not a diagnosis or substitute for formal diagnostic imaging</span>
+        <span class="safety-target-note">Cath is a prediction target — not a model input</span>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-container" id="analysis">
+        <!-- Left Panel: Patient Input -->
+        <aside id="input-panel" class="panel input-panel">
+            <div class="panel-header">
+                <h2>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
+                    </svg>
+                    Clinical Feature Inputs
+                </h2>
+                <div class="panel-actions">
+                    <button class="btn-sm btn-ghost" id="btn-load-sample" title="Load sample patient">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                        </svg>
+                        Sample
+                    </button>
+                    <button class="btn-sm btn-ghost" id="btn-clear-form" title="Clear all">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <div class="clinical-input-meta"><strong>Z-ALIZADEH SANI COHORT</strong> · CATH / LAD / LCX / RCA OUTCOME COLUMNS EXCLUDED FROM INPUTS</div>
+
+            <div class="form-container" id="patient-form-container">
+                <!-- Dynamically populated by JavaScript -->
+                <div class="form-placeholder">
+                    <p>Loading patient features...</p>
+                </div>
+            </div>
+            <p class="input-note">Blank numeric fields use dataset averages. Sample records are for demonstration only.</p>
+
+            <div class="form-footer">
+                <button class="btn btn-primary btn-predict" id="btn-predict">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    Analyze Risk
+                </button>
+            </div>
+        </aside>
+
+        <!-- Center: 3D Visualization -->
+        <section class="panel viewer-panel" id="heart-view">
+            <div class="viewer-header">
+                <div class="viewer-title-block">
+                    <h2>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Cardiac 3D Visualization
+                    </h2>
+                    <p>Interactive anatomical reference · drag to rotate</p>
+                </div>
+                <div class="viewer-controls">
+                    <button class="btn-sm btn-ghost" id="btn-reset-camera" title="Reset camera" aria-label="Reset camera">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2.5 2v6h6M21.5 22v-6h-6"/><path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.2"/>
+                        </svg>
+                        <span>Reset</span>
+                    </button>
+                    <button class="btn-sm btn-ghost" id="btn-toggle-labels" title="Toggle labels" aria-label="Toggle anatomy labels">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>
+                        </svg>
+                        <span>Labels</span>
+                    </button>
+                    <button class="btn-sm btn-ghost" id="btn-toggle-heartbeat" title="Toggle heartbeat animation" aria-label="Toggle heartbeat animation">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                        <span>Pulse</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="three-canvas-container" class="three-canvas-container">
+                <!-- Three.js renders here -->
+                <div class="anatomy-model-status" id="anatomy-model-status" role="status" aria-live="polite">
+                    <span class="status-dot"></span>Loading real anatomical model...
+                </div>
+                <div class="anatomy-note">Vessel paths are illustrative; the model predicts vessel-level risk, not lesion location.</div>
+                <div class="canvas-overlay" id="canvas-overlay">
+                    <div class="artery-tooltip" id="artery-tooltip" style="display:none;">
+                        <div class="tooltip-title" id="tooltip-title">LAD</div>
+                        <div class="tooltip-body" id="tooltip-body">
+                            <span class="tooltip-label">Stenosis Risk:</span>
+                            <span class="tooltip-value" id="tooltip-value">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="legend-overlay" id="legend-overlay">
+                    <div class="legend-title">Risk Level</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #00e676;"></span> Low (&lt;25%)</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #ffea00;"></span> Moderate (25-50%)</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #ff9100;"></span> High (50-75%)</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #ff1744;"></span> Critical (&gt;75%)</div>
+                </div>
+
+                <div class="model-credit">
+                    <a href="https://sketchfab.com/3d-models/realistic-human-heart-3f8072336ce94d18b3d0d055a1ece089" target="_blank" rel="noopener noreferrer">Realistic Human Heart by neshallads · CC BY 4.0</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="vessel-focus-strip" aria-label="Prediction targets">
+            <div class="vessel-focus-heading">
+                <strong>Prediction targets</strong>
+                <span>Select a vessel to highlight it on the model</span>
+            </div>
+            <div class="vessel-results" id="vessel-results">
+                <div class="vessel-card" id="vessel-cath" data-vessel="Cath" role="button" tabindex="0">
+                    <div class="vessel-icon cath-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+                    <div class="vessel-info"><div class="vessel-name">CAD Status</div><div class="vessel-label" id="cath-label">Awaiting analysis</div></div>
+                    <div class="vessel-prob" id="cath-prob">--%</div>
+                </div>
+                <div class="vessel-card" id="vessel-lad" data-vessel="LAD" role="button" tabindex="0">
+                    <div class="vessel-icon lad-icon"><div class="vessel-dot"></div></div>
+                    <div class="vessel-info"><div class="vessel-name">LAD <span class="vessel-fullname">Left Anterior Descending</span></div><div class="vessel-label" id="lad-label">Awaiting analysis</div></div>
+                    <div class="vessel-prob" id="lad-prob">--%</div>
+                </div>
+                <div class="vessel-card" id="vessel-lcx" data-vessel="LCX" role="button" tabindex="0">
+                    <div class="vessel-icon lcx-icon"><div class="vessel-dot"></div></div>
+                    <div class="vessel-info"><div class="vessel-name">LCX <span class="vessel-fullname">Left Circumflex</span></div><div class="vessel-label" id="lcx-label">Awaiting analysis</div></div>
+                    <div class="vessel-prob" id="lcx-prob">--%</div>
+                </div>
+                <div class="vessel-card" id="vessel-rca" data-vessel="RCA" role="button" tabindex="0">
+                    <div class="vessel-icon rca-icon"><div class="vessel-dot"></div></div>
+                    <div class="vessel-info"><div class="vessel-name">RCA <span class="vessel-fullname">Right Coronary Artery</span></div><div class="vessel-label" id="rca-label">Awaiting analysis</div></div>
+                    <div class="vessel-prob" id="rca-prob">--%</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Panel: Results -->
+        <aside id="results-panel" class="panel results-panel">
+            <div class="panel-header">
+                <h2>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    Risk Analysis
+                </h2>
+            </div>
+
+            <!-- Overall Risk Score -->
+            <div class="risk-card overall-risk" id="overall-risk-card">
+                <div class="risk-card-header">
+                    <span class="risk-card-title">Predicted CAD Risk</span>
+                    <span class="risk-badge" id="overall-risk-badge">--</span>
+                </div>
+                <div class="risk-gauge-container">
+                    <svg viewBox="0 0 200 120" class="risk-gauge" id="overall-risk-gauge">
+                        <defs>
+                            <linearGradient id="gauge-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#10b981"/>
+                                <stop offset="33%" style="stop-color:#f59e0b"/>
+                                <stop offset="66%" style="stop-color:#f97316"/>
+                                <stop offset="100%" style="stop-color:#ef4444"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12" stroke-linecap="round"/>
+                        <path id="gauge-fill" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gauge-gradient)" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 251.2"/>
+                        <text id="gauge-text" x="100" y="90" text-anchor="middle" fill="white" font-size="28" font-weight="700" font-family="Inter">--%</text>
+                        <text x="100" y="110" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="11" font-family="Inter">Model Probability</text>
+                    </svg>
+                </div>
+                <p class="risk-card-footnote">Model outputs are uncalibrated and are not clinical probabilities.</p>
+            </div>
+
+            <!-- Model Performance -->
+            <div class="metrics-section" id="metrics-section">
+                <h3>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                    Model Performance
+                </h3>
+                <p class="explanation-note">Five-fold cross-validation mean ± standard deviation.</p>
+                <div class="metrics-grid" id="metrics-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </aside>
+
+        <section class="shap-section" id="shap-section" aria-labelledby="shap-title">
+            <div class="shap-header">
+                <div>
+                    <h3 id="shap-title">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 19V9m5 10V5m5 14v-7m5 7V3"/><path d="M2 21h20"/>
+                        </svg>
+                        Approx. SHAP Feature Contributions
+                    </h3>
+                    <p class="explanation-note">Estimated contribution to the selected model output · not causal effects</p>
+                </div>
+                <label class="shap-select-label" for="shap-target-select">Target
+                    <select id="shap-target-select" class="select-sm" title="Permutation SHAP estimates in probability points">
+                        <option value="Cath">CAD</option>
+                        <option value="LAD">LAD</option>
+                        <option value="LCX">LCX</option>
+                        <option value="RCA">RCA</option>
+                    </select>
+                </label>
+            </div>
+            <div class="shap-chart" id="shap-chart">
+                <div class="shap-placeholder"><p>Run analysis to see feature contributions</p></div>
+            </div>
+            <div class="shap-axis-note"><span>← Lowers model output</span><span>0</span><span>Raises model output →</span></div>
+        </section>
+    </main>
+
+    <!-- Disclaimer Footer -->
+    <footer class="disclaimer-footer" id="disclaimer">
+        <div class="disclaimer-content">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span><strong>Clinical Safety Disclaimer:</strong> This tool is for <strong>educational and decision support purposes only</strong>. Predictions are generated by machine learning models and are <strong>not a substitute</strong> for formal diagnostic imaging, clinical judgment, or medical advice. Always consult a qualified healthcare professional for diagnosis and treatment decisions.</span>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script type="module" src="./static/js/app.js?v=clinical-20261015"></script>
+</body>
+</html>
